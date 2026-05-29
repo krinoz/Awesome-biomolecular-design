@@ -19,13 +19,18 @@ This repository aims to be a **one-stop reference** that:
 
 > **285+ tools** across **7 sections** · **285+ GitHub star badges** · Install & usage for every entry · Last updated: **May 2026**
 
+In addition to the catalogue below, this repo now ships:
+
+- 📦 **[`containers/`](containers/)** — Docker + Apptainer recipes for the canonical protein-design and small-molecule stacks, with multi-tool `docker-compose` orchestration.
+- 📖 **[`guide/`](guide/)** — *A Hitchhiker's Guide to Deep-Learning Based Biomolecular Binder Design* — a goal-oriented walkthrough of the full pipeline, with worked examples and a tool-selection decision matrix.
+
 ---
 
 ## Roadmap
 
 - [x] **Agentic AI for Biomolecular Discovery** — LLM-agent and multi-agent frameworks (e.g., ProtAgents, MDCrow, ChemGraph, Coscientist, BioDiscoveryAgent, Biomni, Robin) that autonomously orchestrate multi-step design and simulation workflows, combining structure prediction, docking, MD, and optimization into end-to-end agentic pipelines. See **[Section 6](#6-agentic-ai-for-biomolecular-discovery)**.
-- [ ] **Docker / Container Recipes** — Provide ready-to-use Dockerfiles/Singularity/Apptainer recipes for the most widely-used tools so users can spin up reproducible environments in minutes without wrestling with dependency conflicts.
-- [ ] **A Hitchhiker's Guide to Deep Learning Based Biomolecular Binder Design** — A comprehensive guide covering the end-to-end workflow from binder screening, generation, optimization, and validation, with practical recommendations on which tools to use at each stage.
+- [x] **Docker / Container Recipes** — Ready-to-use Dockerfiles, Apptainer/Singularity definition files, and `docker-compose` orchestration so users can spin up reproducible environments in minutes without wrestling with dependency conflicts. See **[`containers/`](containers/)**.
+- [x] **A Hitchhiker's Guide to Deep Learning Based Biomolecular Binder Design** — A practitioner's guide covering the end-to-end workflow from target prep through generation, scoring, filtering, and wet-lab handoff, with worked examples for each binder modality and a tool-selection decision matrix. See **[`guide/`](guide/)**.
 
 ---
 
