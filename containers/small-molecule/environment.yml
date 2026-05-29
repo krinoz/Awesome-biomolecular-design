@@ -1,0 +1,46 @@
+# conda env shipped inside awesome-biomol/small-molecule.
+# Same pinning philosophy as protein-design/environment.yml.
+
+name: small-molecule
+channels:
+  - conda-forge
+  - bioconda
+  - nvidia
+
+dependencies:
+  - python=3.10
+  - pip
+  - cudatoolkit=12.1
+  # Numerics
+  - numpy=1.26.*
+  - scipy=1.13.*
+  - pandas=2.2.*
+  - scikit-learn=1.5.*
+  # PyTorch (CUDA 12.1)
+  - pytorch::pytorch=2.3.*
+  - pytorch::torchvision=0.18.*
+  - pytorch::pytorch-cuda=12.1
+  # Cheminformatics
+  - rdkit=2024.03.*
+  - openbabel=3.1.*
+  - mordred=1.2.*
+  # Docking & MD support
+  - openmm=8.1.*
+  - pdbfixer=1.9
+  # Notebooks & visualisation
+  - jupyterlab
+  - py3dmol
+  - matplotlib
+  # Pip-only packages
+  - pip:
+      # Property prediction
+      - chemprop==2.0.4
+      # Geometric DL stack used by DiffDock
+      - torch_geometric==2.5.3
+      - e3nn==0.5.1
+      # Classical docking glue
+      - vina==1.2.5
+      # Useful utilities
+      - tqdm
+      - PyYAML
+      - networkx
