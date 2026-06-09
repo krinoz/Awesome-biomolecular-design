@@ -17,13 +17,13 @@ This repository aims to be a **one-stop reference** that:
 - **Provides actionable information** — each tool entry includes a one-line description, publication reference, GitHub link with star badge, install instructions (pip/conda/Docker), and a minimal usage example.
 - **Is continuously updated** — we actively track new releases and welcome community contributions.
 
-> **200+ tools** across **6 sections** · **200+ GitHub star badges** · Install & usage for every entry · Last updated: **May 2026**
+> **285+ tools** across **7 sections** · **285+ GitHub star badges** · Install & usage for every entry · Last updated: **May 2026**
 
 ---
 
 ## Roadmap
 
-- [ ] **Agentic AI for Biomolecular Discovery** — Add LLM-agent and multi-agent frameworks (e.g., ProtAgents, MD-Agent, ChemGraph) that autonomously orchestrate multi-step design and simulation workflows, combining structure prediction, docking, MD, and optimization into end-to-end agentic pipelines.
+- [x] **Agentic AI for Biomolecular Discovery** — LLM-agent and multi-agent frameworks (e.g., ProtAgents, MDCrow, ChemGraph, Coscientist, BioDiscoveryAgent, Biomni, Robin) that autonomously orchestrate multi-step design and simulation workflows, combining structure prediction, docking, MD, and optimization into end-to-end agentic pipelines. See **[Section 6](#6-agentic-ai-for-biomolecular-discovery)**.
 - [ ] **Docker / Container Recipes** — Provide ready-to-use Dockerfiles/Singularity/Apptainer recipes for the most widely-used tools so users can spin up reproducible environments in minutes without wrestling with dependency conflicts.
 - [ ] **A Hitchhiker's Guide to Deep Learning Based Biomolecular Binder Design** — A comprehensive guide covering the end-to-end workflow from binder screening, generation, optimization, and validation, with practical recommendations on which tools to use at each stage.
 
@@ -88,6 +88,13 @@ This repository aims to be a **one-stop reference** that:
 | | [5.6 De Novo Aptamer Design & Optimization](#56-de-novo-aptamer-design--optimization) | AptaDiff |
 | | [5.7 Binding Affinity Prediction (RNA-Target)](#57-binding-affinity-prediction-rna-target) | CoPRA |
 | | [5.8 RNA Structure Analysis](#58-rna-structure-analysis-tools) | RNAglib |
+| **[6. Agentic AI for Biomolecular Discovery](#6-agentic-ai-for-biomolecular-discovery)** | | |
+| | [6.1 LLM Agent Foundations & Frameworks](#61-llm-agent-foundations--frameworks) | Aviary |
+| | [6.2 Chemistry & Drug Discovery Agents](#62-chemistry--drug-discovery-agents) | ChemCrow |
+| | [6.3 Protein & Biomolecule Design Agents](#63-protein--biomolecule-design-agents) | ProtAgents |
+| | [6.4 Molecular Dynamics & Simulation Agents](#64-molecular-dynamics--simulation-agents) | MDCrow |
+| | [6.5 Genomics & Experiment-Design Agents](#65-genomics--experiment-design-agents) | CRISPR-GPT |
+| | [6.6 Multi-Agent Discovery Pipelines & General-Purpose Bio Agents](#66-multi-agent-discovery-pipelines--general-purpose-bio-agents) | Biomni |
 | **[Quick Reference Matrix](#quick-reference-tool--pipeline-step-matrix)** | | |
 
 ---
@@ -7710,6 +7717,647 @@ print(r.text)
 
 ---
 
+## 6. Agentic AI for Biomolecular Discovery
+
+LLM-driven agents that **autonomously plan, call tools, run simulations, analyze results, and iterate** — closing the loop from hypothesis to validated candidate. This section covers single-agent toolkits (e.g., ChemCrow), multi-agent collaboration frameworks (e.g., ProtAgents, Robin), domain-specific scientific copilots (e.g., MDCrow, ChemGraph, CRISPR-GPT), and general-purpose biomedical agents (Biomni). These systems wrap many of the models in earlier sections (RFdiffusion, AlphaFold, OpenMM, RDKit, etc.) into natural-language workflows.
+
+### 6.1 LLM Agent Foundations & Frameworks
+
+---
+
+#### Aviary (FutureHouse)
+**Description:** Open-source gymnasium for training language agents on scientific tasks; ships environments for molecular cloning (SeqQA), protein stability engineering, and literature QA. Pairs with LDP for stochastic-compute-graph-based agent training (Expert Iteration, majority voting). Open-source agents trained on Aviary match frontier models at <1% inference cost.
+[![GitHub stars](https://img.shields.io/github/stars/Future-House/aviary.svg?logo=github&label=Stars)](https://github.com/Future-House/aviary) [paper: ICLR 2025 Workshop on Scaling Self-Improving Foundation Models] [[code](https://github.com/Future-House/aviary)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+pip install fhaviary
+# With bundled scientific environments:
+pip install 'fhaviary[gsm8k,hotpotqa,litqa,lfrqa,notebook]'
+# Sister training framework:
+pip install ldp
+```
+
+**Usage:**
+```python
+from aviary.core import Environment, Message, ToolRequestMessage, Tool
+from ldp.agent import Agent
+from ldp.alg import RolloutManager
+
+# Run an agent on the bundled molecular cloning (SeqQA) or protein stability env
+from aviary.envs.litqa import LitQAEnv  # scientific literature QA
+
+env = LitQAEnv()
+obs, tools = await env.reset()
+# Plug in your LDP agent and roll out trajectories
+runner = RolloutManager(agent=my_agent)
+trajectories = await runner.sample_trajectories(environment_factory=LitQAEnv, batch_size=4)
+```
+
+
+</details>
+
+---
+
+#### LangGraph
+**Description:** Stateful graph framework for building multi-agent LLM workflows; the de-facto backbone behind ChemGraph, MDCrow, BioDiscoveryAgent, Robin, and many other scientific agents. Supports cyclic graphs, persistent state, human-in-the-loop, and tool routing.
+[![GitHub stars](https://img.shields.io/github/stars/langchain-ai/langgraph.svg?logo=github&label=Stars)](https://github.com/langchain-ai/langgraph) [[code](https://github.com/langchain-ai/langgraph)] [[docs](https://langchain-ai.github.io/langgraph/)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+pip install langgraph langchain langchain-openai
+```
+
+**Usage:**
+```python
+from langgraph.graph import StateGraph, END
+from langgraph.prebuilt import ToolNode
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import tool
+
+@tool
+def run_docking(ligand_smiles: str, target_pdb: str) -> str:
+    """Dock a ligand SMILES to a PDB target. Returns predicted pKd."""
+    # call DiffDock / Vina here
+    return "pKd=7.2"
+
+llm = ChatOpenAI(model="gpt-4o").bind_tools([run_docking])
+graph = StateGraph(dict)
+graph.add_node("agent", lambda s: {"messages": s["messages"] + [llm.invoke(s["messages"])]})
+graph.add_node("tools", ToolNode([run_docking]))
+graph.set_entry_point("agent")
+graph.add_conditional_edges("agent", lambda s: "tools" if s["messages"][-1].tool_calls else END)
+graph.add_edge("tools", "agent")
+app = graph.compile()
+```
+
+
+</details>
+
+---
+
+### 6.2 Chemistry & Drug Discovery Agents
+
+---
+
+#### ChemCrow
+**Description:** Pioneer LLM agent that augments GPT-4 with 13 expert chemistry tools (RDKit, paper-qa, RXN4Chemistry retrosynthesis, PubChem, etc.) for autonomous synthesis planning, property prediction, and reaction prediction; demonstrated end-to-end planning of insect repellent and chromophore syntheses on a robotic platform.
+[![GitHub stars](https://img.shields.io/github/stars/ur-whitelab/chemcrow-public.svg?logo=github&label=Stars)](https://github.com/ur-whitelab/chemcrow-public) [paper: Nat Mach Intell 2024] [[code](https://github.com/ur-whitelab/chemcrow-public)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+pip install chemcrow
+export OPENAI_API_KEY="sk-..."
+# Optional: SerpAPI / RXN4Chemistry keys for web search and retrosynthesis
+export SERP_API_KEY="..."
+```
+
+**Usage:**
+```python
+from chemcrow.agents import ChemCrow
+
+chem_model = ChemCrow(model="gpt-4-0613", temp=0.1, verbose=True)
+chem_model.run("What is the molecular weight of tylenol, "
+               "and propose a 2-step retrosynthesis from commercially available starting materials.")
+```
+
+
+</details>
+
+---
+
+#### Coscientist
+**Description:** Autonomous chemistry agent built on GPT-4 with a modular Planner + Web Searcher + Code Executor + Docs Searcher + Lab Automation architecture; demonstrated to plan, code, execute, and optimize Pd-catalysed Suzuki/Sonogashira cross-coupling reactions on Opentrons / Emerald Cloud Lab hardware. Repo is published as research-code-as-supplementary (Apache-2.0 with Commons Clause), organized by experiment rather than a packaged CLI.
+[![GitHub stars](https://img.shields.io/github/stars/gomesgroup/coscientist.svg?logo=github&label=Stars)](https://github.com/gomesgroup/coscientist) [paper: Nature 2023 (Boiko, MacKnight, Kline, Gomes)] [[code](https://github.com/gomesgroup/coscientist)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+git clone https://github.com/gomesgroup/coscientist.git
+cd coscientist
+# Repo is organized by experiment (synthesis_capabilities/,
+# large_library_selections/, optimization/, simple_implementation/, ...).
+# Each directory ships its own scripts/notebooks; create a fresh env
+# per experiment and follow that subdir's README.
+export OPENAI_API_KEY="sk-..."
+```
+
+**Usage:**
+```bash
+# Start with the minimal demo scaffold
+cd simple_implementation
+# Then open the notebooks / scripts in this directory and adapt
+# the planner prompt to your target reaction or assay.
+```
+
+
+</details>
+
+---
+
+#### DrugAgent (Inoue et al.)
+**Description:** Multi-agent LLM system for drug-target interaction (DTI) prediction; coordinator agent orchestrates ML (DeepPurpose MPNN-CNN), knowledge-graph (NetworkX/INDRA), and literature-search (Bing API + GPT) sub-agents under PyAutoGen, returning interpretable Chain-of-Thought + ReAct reasoning for each drug-target pair. **+45% F1** over GPT-4o-mini multi-agent baseline on a kinase-inhibitor benchmark.
+[![GitHub stars](https://img.shields.io/github/stars/AG2AI-Admin/DrugAgent.svg?logo=github&label=Stars)](https://github.com/AG2AI-Admin/DrugAgent) [paper: arXiv 2024 (2408.13378)] [[code](https://github.com/AG2AI-Admin/DrugAgent)] [[v1 archive](https://github.com/inoue0426/DrugAgent-v1)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+git clone https://github.com/AG2AI-Admin/DrugAgent.git && cd DrugAgent
+docker build -t drugagent:latest .
+docker run -it -p 9999:9999 -v "$(pwd):/app" drugagent:latest
+# Inside the container:
+conda activate python_env
+# Provide API keys in a .env at the project root:
+#   OPENAI_API_KEY=sk-...
+#   BING_API_KEY=...
+```
+
+**Usage:**
+```bash
+# Run the multi-agent DTI pipeline on a CSV of drug/target pairs
+cd agents/
+python integrate_agent.py
+# Output rows: [drug, target, ML_score, KG_score, Search_score,
+#               final_score, final_reasoning]
+```
+
+
+</details>
+
+---
+
+#### DrugAssist
+**Description:** Interactive LLM (LLaMA-2-7B fine-tuned on the released MolOpt-Instructions dataset) for **conversational molecule optimization**; supports single- and multi-property optimization (logP, QED, BBBP, DRD2) through human-machine dialog with iterative refinement. Ships as a Gradio web service plus llama.cpp / Text-Generation-WebUI deployment paths.
+[![GitHub stars](https://img.shields.io/github/stars/blazerye/DrugAssist.svg?logo=github&label=Stars)](https://github.com/blazerye/DrugAssist) [paper: Brief Bioinform 2025] [[code](https://github.com/blazerye/DrugAssist)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+git clone https://github.com/blazerye/DrugAssist.git && cd DrugAssist
+conda create -n drugassist python=3.8 -y && conda activate drugassist
+pip install -r requirements.txt
+# Download fine-tuned weights from the HuggingFace link in the repo README
+```
+
+**Usage:**
+```bash
+# Launch the interactive Gradio molecule-optimization UI
+python gradio_service.py \
+    --base_model /path/to/drugassist-llama2-7b \
+    --ip 0.0.0.0 --port 7860
+
+# Or run the batch evaluation scripts (see evaluate/evaluate.md):
+cd evaluate && bash evaluate.sh
+```
+
+
+</details>
+
+---
+
+#### TamGen
+**Description:** Target-aware generative chemical language model (GPT-style decoder + 3D-protein encoder); used by GHDDI/Microsoft Research to design ClpP protease inhibitors for *M. tuberculosis*, with the most potent compound showing significant bioactivity in wet-lab assays. Often deployed as a tool inside drug-discovery agent pipelines.
+[![GitHub stars](https://img.shields.io/github/stars/SigmaGenX/TamGen.svg?logo=github&label=Stars)](https://github.com/SigmaGenX/TamGen) [paper: Nat Comms 2024] [[code](https://github.com/SigmaGenX/TamGen)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+git clone https://github.com/SigmaGenX/TamGen.git && cd TamGen
+conda create -n TamGen python=3.9 -y && conda activate TamGen
+bash setup_env.sh
+# Download checkpoints (checkpoints.zip, gpt_model.zip) from
+# https://doi.org/10.5281/zenodo.13751390 and unzip into TamGen/
+```
+
+**Usage:**
+```bash
+# Run a ready-made target-aware compound generation example
+bash scripts/example_inference.sh
+
+# Or call the main inference script (see scripts/generate.sh for the full CLI)
+bash scripts/generate.sh
+# For interactive exploration, open interactive_decode.ipynb (uses the TamGenDemo class)
+```
+
+
+</details>
+
+---
+
+### 6.3 Protein & Biomolecule Design Agents
+
+---
+
+#### ProtAgents
+**Description:** Multi-agent framework for *de novo* protein design where specialized GPT-4 agents (Planner, Assistant, Critic, user_proxy) collaborate over tools including Chroma diffusion generator, ProteinForceGPT (mechanical-property predictor), normal-mode physics simulators, and Pyrosetta — closing the loop on multi-objective protein design.
+[![GitHub stars](https://img.shields.io/github/stars/lamm-mit/ProtAgents.svg?logo=github&label=Stars)](https://github.com/lamm-mit/ProtAgents) [paper: Digital Discovery 2024] [[code](https://github.com/lamm-mit/ProtAgents)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+git clone https://github.com/lamm-mit/ProtAgents.git && cd ProtAgents
+conda create -n protagents python=3.10 -y && conda activate protagents
+pip install pyautogen openai chromadb biopython
+# Set OpenAI + Chroma keys in llm_config.py
+```
+
+**Usage:**
+```bash
+# Run experiment 1: design proteins with target natural-frequency profile
+jupyter nbconvert --execute exp1.ipynb
+# Or directly:
+python -c "from agents import build_team; build_team().initiate_chat(\
+    'Design a de novo alpha-beta protein from CATH 3.30 with natural frequency near 1.2 THz.')"
+```
+
+
+</details>
+
+---
+
+#### Simple Protein Agent
+**Description:** Lightweight natural-language protein design agent built on Google ADK + Gemini + Apple's SimpleFold + ESM-3B; uses sequential model loading so end-to-end sequence design + structure prediction fits in 12 GB RAM (works on Colab free tier / Kaggle).
+[![GitHub stars](https://img.shields.io/github/stars/a2as-team/Simple-protein-agent.svg?logo=github&label=Stars)](https://github.com/a2as-team/Simple-protein-agent) [[code](https://github.com/a2as-team/Simple-protein-agent)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+git clone https://github.com/a2as-team/Simple-protein-agent.git
+cd Simple-protein-agent
+pip install -r requirements.txt
+git clone https://github.com/apple/ml-simplefold.git && pip install -e ./ml-simplefold
+python setup_models.py    # downloads SimpleFold-100M + ESM-3B (~11.4 GB)
+export GOOGLE_API_KEY="..."
+```
+
+**Usage:**
+```python
+from protein_design_agent.agent import create_protein_agent
+from google.adk.runners import InMemoryRunner
+
+agent = create_protein_agent("gemini-2.5-pro")
+runner = InMemoryRunner(agent=agent)
+response = await runner.run_debug(
+    "Design a 20-residue amphipathic alpha-helical antimicrobial peptide.")
+# Outputs sequence + .cif structure file from SimpleFold
+```
+
+
+</details>
+
+---
+
+### 6.4 Molecular Dynamics & Simulation Agents
+
+---
+
+#### MDCrow (formerly MD-Agent)
+**Description:** LangChain-based LLM agent that sets up and runs OpenMM molecular-dynamics simulations from natural language; chain-of-thought over 40 expert-designed tools covering PDB fetching, system preparation, force-field selection, simulation, and trajectory analysis (RMSD, RMSF, contacts). Evaluated across 25 MD tasks of varying difficulty.
+[![GitHub stars](https://img.shields.io/github/stars/ur-whitelab/mdcrow.svg?logo=github&label=Stars)](https://github.com/ur-whitelab/mdcrow) [paper: arXiv 2025 (2502.09565)] [[code](https://github.com/ur-whitelab/mdcrow)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+git clone https://github.com/ur-whitelab/MDCrow.git && cd MDCrow
+conda env create -n mdcrow -f environment.yaml && conda activate mdcrow
+pip install -e .
+cp .env.example .env   # add OPENAI_API_KEY (or Together/Anthropic/Fireworks)
+```
+
+**Usage:**
+```python
+from mdcrow import MDCrow
+
+agent = MDCrow(model="gpt-4o")
+agent.run("Simulate protein 1ZNI in TIP3P water at 300 K for 100 ps "
+          "using AMBER ff14SB and report RMSD over time.")
+```
+
+
+</details>
+
+---
+
+#### MDAgent (PKU)
+**Description:** Fine-tuned LLM agent for **LAMMPS** thermodynamic simulations; releases curated LSCF/LEQS datasets and SFTed code-generation (MD-LammpsCoder-Qwen2.5-7B) + evaluator (MD-LammpsEvaluator) models. Reduces task time by 42% vs manual scripting.
+[![GitHub stars](https://img.shields.io/github/stars/FredericVAN/PKU_MDAgent.svg?logo=github&label=Stars)](https://github.com/FredericVAN/PKU_MDAgent) [paper: Sci Reports 2025] [[code](https://github.com/FredericVAN/PKU_MDAgent)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+git clone https://github.com/FredericVAN/PKU_MDAgent.git && cd PKU_MDAgent
+pip install -r requirements.txt
+# Pull SFTed models from HuggingFace:
+#   FredericVAN/MD-LammpsCoder-Qwen2.5-7B
+#   FredericVAN/MD-LammpsEvaluator-Qwen2.5-7B
+```
+
+**Usage:**
+```bash
+streamlit run material_system_UI.py
+# Then ask in plain language, e.g.:
+# "Generate a LAMMPS input script to compute the thermal expansion
+#  coefficient of single-crystal copper between 300 K and 800 K."
+```
+
+
+</details>
+
+---
+
+#### ChemGraph
+**Description:** Argonne National Lab's agentic framework for computational chemistry & materials workflows; LangGraph + ASE on top of NWChem, ORCA, TBLite, MACE, UMA, and other ML potentials. 13 benchmark tasks; multi-agent decomposition lifts GPT-4o to **100%** accuracy on geometry optimization, frequency, and thermochemistry tasks.
+[![GitHub stars](https://img.shields.io/github/stars/argonne-lcf/ChemGraph.svg?logo=github&label=Stars)](https://github.com/argonne-lcf/ChemGraph) [paper: Communications Chemistry 2026] [[code](https://github.com/argonne-lcf/ChemGraph)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+pip install chemgraphagent[calculators]
+# Or run zero-install via Docker:
+docker run --rm -it -p 8501:8501 ghcr.io/argonne-lcf/chemgraph:latest \
+  streamlit run src/ui/app.py --server.address=0.0.0.0 --server.port=8501
+export OPENAI_API_KEY="sk-..."   # or ANTHROPIC_API_KEY / GEMINI_API_KEY
+```
+
+**Usage:**
+```bash
+# CLI single-agent
+chemgraph -q "Optimize the geometry of caffeine using TBLite and report the dipole moment." -m gpt-4o -r
+
+# Multi-agent (planner + worker decomposition)
+chemgraph -q "Compute the BDE of the C-H bond in methanol via DFT (B3LYP/def2-TZVP) using NWChem." \
+  -w multi_agent -m gpt-4o -r
+
+# Interactive REPL
+chemgraph --interactive
+```
+
+
+</details>
+
+---
+
+### 6.5 Genomics & Experiment-Design Agents
+
+---
+
+#### CRISPR-GPT
+**Description:** Multi-agent LLM system for **gene-editing experiment design**: covers CRISPR system selection, sgRNA design (Broad CRISPick), off-target prediction, delivery method recommendation, validation primer design, and experimental SOP generation. Supports knockout, base-editing, prime-editing, and epigenetic editing across 22 sub-tasks.
+[![GitHub stars](https://img.shields.io/github/stars/cong-lab/crispr-gpt-pub.svg?logo=github&label=Stars)](https://github.com/cong-lab/crispr-gpt-pub) [paper: Nat Biomed Eng 2025] [[code](https://github.com/cong-lab/crispr-gpt-pub)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+git clone https://github.com/cong-lab/crispr-gpt-pub.git && cd crispr-gpt-pub
+conda create -n crispr-gpt python=3.11 -y && conda activate crispr-gpt
+pip install -r requirements.txt
+echo "OPENAI_KEY=sk-..." > .env
+```
+
+**Usage:**
+```bash
+python main.py
+# Then in the chat UI:
+#  > "Design a CRISPR-Cas9 knockout experiment for human PCSK9 in HEK293T;
+#     produce 5 top sgRNAs with off-target scores and Sanger validation primers."
+```
+
+
+</details>
+
+---
+
+#### BioDiscoveryAgent
+**Description:** Closed-loop AI agent for designing **genetic perturbation (CRISPR) screens**; uses Claude-3.5 Sonnet paired with literature search, Reactome pathway lookup, gene-similarity search (Achilles), and an AI-critic. Beats Bayesian-optimization baselines by 21% in hit-rate across IFNG/IL2/Carnevale22/Scharenberg22/Sanchez21 benchmarks.
+[![GitHub stars](https://img.shields.io/github/stars/snap-stanford/BioDiscoveryAgent.svg?logo=github&label=Stars)](https://github.com/snap-stanford/BioDiscoveryAgent) [paper: arXiv 2024 (2405.17631); ICLR 2025] [[code](https://github.com/snap-stanford/BioDiscoveryAgent)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+git clone https://github.com/snap-stanford/BioDiscoveryAgent.git
+cd BioDiscoveryAgent
+pip install -r requirements.txt
+export ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+**Usage:**
+```bash
+# Closed-loop genetic perturbation design with all tools
+python research_assistant.py \
+  --task perturb-genes-brief \
+  --model claude-3-5-sonnet-20240620 \
+  --data_name IFNG --steps 5 --num_genes 128 \
+  --lit_review True --critique True --reactome True \
+  --gene_search True --csv_path ./data/ \
+  --log_dir runs/sonnet_all
+```
+
+
+</details>
+
+---
+
+### 6.6 Multi-Agent Discovery Pipelines & General-Purpose Bio Agents
+
+---
+
+#### Robin (FutureHouse)
+**Description:** End-to-end multi-agent system for **autonomous therapeutic discovery**: orchestrates Crow (literature search), Falcon (deep-dive synthesis), and Finch (data analysis) into a closed hypothesis → experiment-design → analysis loop. Generated the first AI-discovered novel candidate — ripasudil for dry age-related macular degeneration (dAMD) — in 2.5 months.
+[![GitHub stars](https://img.shields.io/github/stars/Future-House/robin.svg?logo=github&label=Stars)](https://github.com/Future-House/robin) [paper: arXiv 2025 (2505.13400)] [[code](https://github.com/Future-House/robin)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+git clone https://github.com/Future-House/robin.git && cd robin
+pip install -e .
+export OPENAI_API_KEY="sk-..." ANTHROPIC_API_KEY="sk-ant-..."
+# Robin uses FutureHouse's edison API for the Crow/Falcon/Finch agents:
+export EDISON_API_KEY="..."
+```
+
+**Usage:**
+```python
+from robin import (
+    RobinConfiguration,
+    experimental_assay,
+    therapeutic_candidates,
+    data_analysis,
+)
+
+config = RobinConfiguration(
+    disease_name="dry age-related macular degeneration",
+    llm_name="o4-mini",
+    num_assays=5,
+    num_candidates=20,
+)
+
+# 1. Crow + Falcon propose and rank experimental assays
+assays = experimental_assay(config)
+
+# 2. Generate ranked therapeutic candidates against the top assay(s)
+candidates = therapeutic_candidates(config, assays)
+
+# 3. After running the wet-lab assay, feed results back for refinement
+analysis = data_analysis(config, assays, candidates, experimental_data="results.csv")
+```
+
+The recommended starting point is `robin_demo.ipynb`, which walks through the full
+hypothesis → experiment-design → analysis loop on the dAMD case study.
+
+
+</details>
+
+---
+
+#### Biomni (Stanford SNAP)
+**Description:** General-purpose biomedical AI agent (Biomni-A1) over a unified action space (Biomni-E1) of 25+ biomedical subfields — CRISPR screen design, scRNA-seq annotation, ADMET, drug repurposing, rare-disease diagnosis, microbiome analysis, molecular cloning. Combines retrieval-augmented planning with Python code execution; backed by an 11 GB curated tools/data lake.
+[![GitHub stars](https://img.shields.io/github/stars/snap-stanford/biomni.svg?logo=github&label=Stars)](https://github.com/snap-stanford/biomni) [paper: bioRxiv 2025 (10.1101/2025.05.30.656746)] [[code](https://github.com/snap-stanford/biomni)] [[website](https://biomni.stanford.edu)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+git clone https://github.com/snap-stanford/biomni.git && cd biomni
+bash setup.sh                  # creates conda env biomni_e1 (~11 GB data lake)
+conda activate biomni_e1
+pip install biomni --upgrade
+export ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+**Usage:**
+```python
+from biomni.agent import A1
+
+agent = A1(path='./data', llm='claude-sonnet-4-20250514')
+
+agent.go("Plan a CRISPR screen to identify genes that regulate "
+         "T cell exhaustion; return 32 genes with maximum perturbation effect.")
+
+agent.go("Annotate this scRNA-seq dataset and propose 3 testable hypotheses "
+         "about cell-state transitions: /data/pbmc.h5ad")
+
+agent.go("Predict ADMET properties for CC(C)CC1=CC=C(C=C1)C(C)C(=O)O")
+```
+
+
+</details>
+
+---
+
+#### PaperQA2 (FutureHouse)
+**Description:** Agentic RAG system for **scientific literature**; iteratively searches, retrieves, re-ranks, and summarizes papers with grounded in-text citations. **Superhuman performance** vs PhD-level biologists on LitQA2; the WikiCrow agent built on top generates Wikipedia-quality articles for all 20,000 human genes. Essential building block for downstream literature-aware agents.
+[![GitHub stars](https://img.shields.io/github/stars/Future-House/paper-qa.svg?logo=github&label=Stars)](https://github.com/Future-House/paper-qa) [paper: arXiv 2024 (2409.13740)] [[code](https://github.com/Future-House/paper-qa)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+pip install "paper-qa>=5"
+export OPENAI_API_KEY="sk-..."
+# Optional metadata services for >100 papers:
+export CROSSREF_API_KEY="..." SEMANTIC_SCHOLAR_API_KEY="..."
+```
+
+**Usage:**
+```bash
+# Index a directory of PDFs and ask grounded questions
+cd ./my_papers
+pqa ask "What manufacturing challenges are unique to bispecific antibodies?"
+
+# Or programmatically
+python -c "
+from paperqa import Settings, ask
+answer = ask(query='Has anyone designed neural networks that compute with DNA?',
+             settings=Settings(paper_directory='./my_papers'))
+print(answer.formatted_answer)"
+```
+
+
+</details>
+
+---
+
+#### CoScientist (ITMO)
+**Description:** Open-source multi-agent system for chemistry & materials discovery; ReAct agents for ChEMBL/BindingDB data acquisition, ML model training, predictive + generative molecular property workflows, and vector-DB-backed literature analysis. Modular MCP-server architecture so new tools can be plugged in (recent additions: retrosynthesis + forward-prediction MCP).
+[![GitHub stars](https://img.shields.io/github/stars/aimclub/CoScientist.svg?logo=github&label=Stars)](https://github.com/aimclub/CoScientist) [[code](https://github.com/aimclub/CoScientist)] [[mirror](https://github.com/ITMO-NSS-team/CoScientist)]
+
+
+<details><summary>Install & Usage</summary>
+
+**Install:**
+```bash
+# Pull required git dependencies first
+pip install git+https://github.com/fiestaxxl/rag_tools.git
+
+git clone https://github.com/aimclub/CoScientist.git && cd CoScientist
+python -m venv venv && source venv/bin/activate
+pip install -e .
+
+# Configure LLM/Tavily/OpenAlex/PostgreSQL keys
+cp CoScientist/examples/example_config.env .env
+```
+
+**Usage:**
+```python
+import asyncio
+from CoScientist import create_manager
+
+async def main():
+    manager = await create_manager()
+    result = await manager.run(
+        "Pull all kinase inhibitors with IC50 < 100 nM against EGFR from ChEMBL, "
+        "train a Chemprop ADMET model on them, and generate 50 novel candidates "
+        "with predicted IC50 < 50 nM and BBB permeability."
+    )
+    print(result)
+    await manager.close()
+
+asyncio.run(main())
+
+# Or run the bundled CLI:
+#   python -m CoScientist.main
+```
+
+
+</details>
+
+---
+
 ## Quick Reference: Tool → Pipeline Step Matrix
 
 | Tool | Mol Type | Step | Venue |
@@ -7908,6 +8556,24 @@ print(r.text)
 | RNAmigos2 | RNA/small mol | RNA virtual screening | Nat Mach Intell 2024 |
 | InstructNA | RNA/DNA | De novo functional nucleic acid design | bioRxiv 2025 |
 | srnas/ff | RNA/protein | RNA MD force fields for GROMACS | JCTC 2014 |
+| Aviary | All | Language-agent gym + scientific environments | ICLR Workshop 2025 |
+| LangGraph | All | Multi-agent LLM workflow framework | LangChain |
+| ChemCrow | Small mol | LLM agent for chemistry & synthesis | Nat Mach Intell 2024 |
+| Coscientist | Small mol | Autonomous chemistry agent (lab automation) | Nature 2023 |
+| DrugAgent (Inoue) | Small mol/protein | Multi-agent DTI prediction (PyAutoGen) | arXiv 2024 (2408.13378) |
+| DrugAssist | Small mol | Conversational molecule optimization (LLM) | Brief Bioinform 2025 |
+| TamGen | Small mol | Target-aware molecular generation (CLM) | Nat Comms 2024 |
+| ProtAgents | Protein | Multi-agent de novo protein design | Digital Discovery 2024 |
+| Simple-Protein-Agent | Protein | Natural-language protein design (Gemini+SimpleFold) | GitHub 2025 |
+| MDCrow | All | LLM agent for OpenMM MD simulations | arXiv 2025 (2502.09565) |
+| MDAgent (PKU) | All | Fine-tuned LLM agent for LAMMPS MD | Sci Reports 2025 |
+| ChemGraph | All | Agentic computational-chemistry framework | Comm Chem 2026 |
+| CRISPR-GPT | DNA | Multi-agent CRISPR experiment design | Nat Biomed Eng 2025 |
+| BioDiscoveryAgent | Genomics | Closed-loop CRISPR screen design agent | ICLR 2025 |
+| Robin | All bio | End-to-end multi-agent therapeutic discovery | arXiv 2025 (2505.13400) |
+| Biomni | All bio | General-purpose biomedical AI agent | bioRxiv 2025 |
+| PaperQA2 | All | Agentic RAG over scientific literature | arXiv 2024 (2409.13740) |
+| CoScientist (ITMO) | Small mol/materials | Multi-agent chemistry discovery system | GitHub |
 
 ---
 
