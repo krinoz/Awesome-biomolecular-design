@@ -1,0 +1,48 @@
+name: Correction or update
+description: Report outdated metadata, broken links, duplicate entries, or other corrections.
+title: "[Correction]: "
+labels:
+  - correction
+body:
+  - type: input
+    id: entry
+    attributes:
+      label: Affected entry or section
+      description: Name the tool, section, or heading that needs correction.
+      placeholder: "Example: Section 2.4 RFdiffusion"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong?
+      description: Describe the broken link, outdated instruction, duplicate, incorrect category, or other issue.
+    validations:
+      required: true
+  - type: textarea
+    id: correction
+    attributes:
+      label: Suggested correction
+      description: Provide the corrected URL, text, publication, install command, or section placement.
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source of truth
+      description: Link to official documentation, repository, paper, release notes, or another reliable source.
+      placeholder: "https://..."
+  - type: dropdown
+    id: change-type
+    attributes:
+      label: Correction type
+      options:
+        - Broken link
+        - Outdated install instructions
+        - Outdated publication or version
+        - Incorrect description
+        - Incorrect section placement
+        - Duplicate entry
+        - Other
+    validations:
+      required: true

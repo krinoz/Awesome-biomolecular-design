@@ -1,0 +1,87 @@
+name: Tool addition
+description: Suggest a tool, model, database, API, or workflow for inclusion.
+title: "[Tool]: "
+labels:
+  - tool-addition
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Tool name
+      description: Official name of the tool, model, database, API, or workflow.
+      placeholder: "Example: RFdiffusion"
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: Primary URL
+      description: Project page, code repository, hosted service, documentation, or paper page.
+      placeholder: "https://github.com/example/project"
+    validations:
+      required: true
+  - type: dropdown
+    id: modality
+    attributes:
+      label: Modality
+      options:
+        - Databases and APIs
+        - Small molecules
+        - Peptides and protein binders
+        - Nanobodies
+        - Antibodies
+        - RNA aptamers
+        - Agentic AI
+        - Cross-modal or general infrastructure
+    validations:
+      required: true
+  - type: input
+    id: pipeline-stage
+    attributes:
+      label: Pipeline stage
+      description: Where does this fit in the design workflow?
+      placeholder: "Example: de novo binder design, docking, ADMET prediction, molecular dynamics"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: One-sentence description
+      description: Describe what the resource does and why it is useful.
+      placeholder: "This tool..."
+    validations:
+      required: true
+  - type: input
+    id: publication
+    attributes:
+      label: Publication or reference
+      description: DOI, arXiv URL, journal article, technical report, or documentation link.
+      placeholder: "https://doi.org/..."
+  - type: textarea
+    id: install
+    attributes:
+      label: Install or access instructions
+      description: Provide pip, conda, Docker, source build, API, or web-service access details.
+      render: bash
+  - type: textarea
+    id: usage
+    attributes:
+      label: Minimal usage example
+      description: Provide a short command or code snippet when practical.
+      render: bash
+  - type: dropdown
+    id: maintenance
+    attributes:
+      label: Maintenance status
+      options:
+        - Actively maintained
+        - Usable but maintenance unclear
+        - Archival or deprecated
+        - Unknown
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional notes
+      description: Mention access restrictions, license constraints, unavailable weights, or placement uncertainty.
