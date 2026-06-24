@@ -1,0 +1,62 @@
+# Apptainer / Singularity equivalent of containers/protein-design/Dockerfile.
+#
+# Build (one-off, root-less):
+#   apptainer build protein-design.sif containers/protein-design/Apptainer.def
+#
+# Run (with NVIDIA passthrough):
+#   apptainer exec --nv -B /scratch/$USER:/work protein-design.sif bash
+#
+# This def uses NVIDIA's published CUDA image as its base, mirroring the
+# Docker build to keep the dependency closure identical.
+
+Bootstrap: docker
+From: nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
+
+%files
+    environment.yml /opt/build/environment.yml
+    smoke-test.sh   /usr/local/bin/smoke-test
+
+%post
+    set -eux
+
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        build-essential ca-certificates curl git wget unzip bzip2 \
+        cmake ninja-build gfortran libopenblas-dev libgomp1 pymol
+    rm -rf /var/lib/apt/lists/*
+
+    # Miniforge
+    curl -fsSL -o /tmp/miniforge.sh \
+        "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh"
+    bash /tmp/miniforge.sh -b -p /opt/conda
+    rm /tmp/miniforge.sh
+    export PATH=/opt/conda/bin:$PATH
+
+    # Conda env
+    conda env create -f /opt/build/environment.yml
+    conda clean -afy
+
+    # Tools
+    git clone --depth 1 https://github.com/RosettaCommons/RFdiffusion.git /opt/RFdiffusion
+    /opt/conda/envs/protein-design/bin/pip install --no-deps -e /opt/RFdiffusion
+    mkdir -p /opt/RFdiffusion/models
+
+    git clone --depth 1 https://github.com/dauparas/ProteinMPNN.git /opt/ProteinMPNN
+    /opt/conda/envs/protein-design/bin/pip install --no-cache-dir "colabfold[alphafold]==1.5.5"
+
+    chmod +x /usr/local/bin/smoke-test
+
+%environment
+    export PATH=/opt/conda/envs/protein-design/bin:/opt/conda/bin:$PATH
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%runscript
+    exec bash -l "$@"
+
+%labels
+    Maintainer  Mingrui Tang
+    Stack       awesome-biomol/protein-design
+    CUDA        12.1
+    PyTorch     2.3.x

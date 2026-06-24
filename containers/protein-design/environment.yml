@@ -1,0 +1,46 @@
+# conda env shipped inside awesome-biomol/protein-design
+#
+# Pinned to known-good versions; updates land here first, are tested,
+# and only then propagated into the Dockerfile.
+
+name: protein-design
+channels:
+  - conda-forge
+  - bioconda
+  - nvidia
+
+dependencies:
+  - python=3.10
+  - pip
+  - cudatoolkit=12.1
+  # Numerics
+  - numpy=1.26.*
+  - scipy=1.13.*
+  - pandas=2.2.*
+  # PyTorch (matches CUDA 12.1)
+  - pytorch::pytorch=2.3.*
+  - pytorch::torchvision=0.18.*
+  - pytorch::pytorch-cuda=12.1
+  # Structural biology
+  - biopython=1.83
+  - mdanalysis=2.7.*
+  - openmm=8.1.*
+  - pdbfixer=1.9
+  - dssp=4.4.*
+  - hmmer=3.4
+  - mafft=7.526
+  # Cheminformatics (used for ligand prep when designing enzyme-binders)
+  - rdkit=2024.03.*
+  # Notebooks & visualisation (for interactive sessions)
+  - jupyterlab
+  - py3dmol
+  # Pip-only
+  - pip:
+      - dgl==2.1.0
+      - hydra-core==1.3.2
+      - icecream==2.1.3
+      - omegaconf==2.3.0
+      - opt_einsum==3.3.0
+      - tqdm
+      # ProteinMPNN deps
+      - ml-collections==0.1.1

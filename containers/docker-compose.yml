@@ -1,0 +1,57 @@
+# Multi-tool orchestration for pipelines that span both stacks.
+#
+# Typical use case:
+#   "Design a protein binder against a target with RFdiffusion/ProteinMPNN,
+#    then dock a fragment library against the resulting structure with Vina."
+#
+# Both services share a single ./work directory mounted at /work, so any
+# file written by one is immediately visible to the other.
+#
+# Usage:
+#   docker compose -f containers/docker-compose.yml up -d
+#   docker compose exec protein bash       # design phase
+#   docker compose exec smallmol bash      # dock phase
+#   docker compose down                    # tear down when done
+
+services:
+  protein:
+    image: awesome-biomol/protein-design:latest
+    build:
+      context: ./protein-design
+    container_name: abd-protein
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - ../work:/work
+      - ../weights/rfdiffusion:/opt/RFdiffusion/models:ro
+    working_dir: /work
+    tty: true
+    stdin_open: true
+    command: bash -l
+
+  smallmol:
+    image: awesome-biomol/small-molecule:latest
+    build:
+      context: ./small-molecule
+    container_name: abd-smallmol
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - ../work:/work
+      - ../weights/diffdock:/opt/DiffDock/workdir:ro
+    working_dir: /work
+    tty: true
+    stdin_open: true
+    command: bash -l

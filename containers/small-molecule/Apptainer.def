@@ -1,0 +1,59 @@
+# Apptainer / Singularity equivalent of containers/small-molecule/Dockerfile.
+#
+# Build (one-off):
+#   apptainer build small-molecule.sif containers/small-molecule/Apptainer.def
+#
+# Run:
+#   apptainer exec --nv -B /scratch/$USER:/work small-molecule.sif bash
+
+Bootstrap: docker
+From: nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
+
+%files
+    environment.yml /opt/build/environment.yml
+    smoke-test.sh   /usr/local/bin/smoke-test
+
+%post
+    set -eux
+
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        build-essential ca-certificates curl git wget unzip bzip2 \
+        cmake ninja-build gfortran libopenblas-dev libgomp1 \
+        libxrender1 libxext6 libsm6 \
+        autodock-vina pymol
+    rm -rf /var/lib/apt/lists/*
+
+    # Miniforge + env
+    curl -fsSL -o /tmp/miniforge.sh \
+        "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh"
+    bash /tmp/miniforge.sh -b -p /opt/conda
+    rm /tmp/miniforge.sh
+    export PATH=/opt/conda/bin:$PATH
+    conda env create -f /opt/build/environment.yml
+    conda clean -afy
+
+    # DiffDock
+    git clone --depth 1 https://github.com/gcorso/DiffDock.git /opt/DiffDock
+    /opt/conda/envs/small-molecule/bin/pip install --no-deps -r /opt/DiffDock/requirements.txt
+    mkdir -p /opt/DiffDock/workdir
+
+    # Meeko
+    /opt/conda/envs/small-molecule/bin/pip install meeko==0.6.*
+
+    chmod +x /usr/local/bin/smoke-test
+
+%environment
+    export PATH=/opt/conda/envs/small-molecule/bin:/opt/conda/bin:$PATH
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%runscript
+    exec bash -l "$@"
+
+%labels
+    Maintainer  Mingrui Tang
+    Stack       awesome-biomol/small-molecule
+    CUDA        12.1
+    PyTorch     2.3.x
